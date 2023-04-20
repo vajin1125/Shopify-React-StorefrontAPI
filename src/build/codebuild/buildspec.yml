@@ -1,0 +1,33 @@
+version: 0.2
+env:
+  shell: bash
+  secrets-manager:
+    DOCKER_USERNAME: belebel-ec:DOCKER_USERNAME
+    DOCKER_PASSWORD: belebel-ec:DOCKER_PASSWORD
+    AWS_ACCOUNT_ID: belebel-ec:AWS_ACCOUNT_ID
+    AWS_REGION: belebel-ec:AWS_REGION
+    APP_ENV: belebel-ec:APP_ENV
+    REACT_APP_FORMSPREE_ID: belebel-ec:REACT_APP_FORMSPREE_ID
+    REACT_APP_SHOPIFY_URL: belebel-ec:REACT_APP_SHOPIFY_URL
+    REACT_APP_STORE_FRONT_ACCESS_TOKEN: belebel-ec:REACT_APP_STORE_FRONT_ACCESS_TOKEN
+    REACT_APP_GOOGLE_CLIENT_ID: belebel-ec:REACT_APP_GOOGLE_CLIENT_ID
+phases:
+  pre_build:
+    commands:
+      - aws --version
+      - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+  build:
+    commands:
+      - docker build -t client
+        --build-arg APP_ENV=$APP_ENV
+        --build-arg REACT_APP_FORMSPREE_ID=$REACT_APP_FORMSPREE_ID
+        --build-arg REACT_APP_SHOPIFY_URL=$REACT_APP_SHOPIFY_URL
+        --build-arg REACT_APP_STORE_FRONT_ACCESS_TOKEN=$REACT_APP_STORE_FRONT_ACCESS_TOKEN
+        --build-arg REACT_APP_GOOGLE_CLIENT_ID=$REACT_APP_GOOGLE_CLIENT_ID
+        -f ./src/build/docker/Dockerfile .
+      - docker tag client:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/client:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/client:latest
